@@ -1,54 +1,23 @@
-# React + TypeScript + Vite
+WeatherTunes
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+WeatherTunes is a React-based web application that curates a music playlist based on the current weather conditions. It utilizes the Open-Meteo API to fetch real-time weather data and the Spotify API to generate and play custom playlists tailored to the user's weather experience.
 
-Currently, two official plugins are available:
+Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Real-time Weather Detection: Fetches weather data using the Open-Meteo API.
 
-## Expanding the ESLint configuration
+Custom Playlists: Matches weather conditions with a curated playlist on Spotify.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+User-Friendly Interface: Built with React and TypeScript for a smooth user experience.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+Seamless Spotify Integration: Uses Spotify API to play music directly in the app.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Tech Stack
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Frontend: React, TypeScript
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+APIs: Open-Meteo API, Spotify API
+
+Styling: Tailwind CSS (or any preferred styling framework)
+
+State Management: React Hooks / Context API (if necessary)
