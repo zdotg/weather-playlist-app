@@ -21,6 +21,7 @@
     "@types/babel__core": "^7.20.5",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/spotify-web-playback-sdk": "^0.1.19",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
