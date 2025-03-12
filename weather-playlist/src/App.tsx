@@ -41,10 +41,10 @@ const App: React.FC = () => {
   // Load Spotify SDK on mount
   useEffect(() => {
     loadSpotifySDK();
-
+  
     window.onSpotifyWebPlaybackSDKReady = () => {
       console.log("Spotify SDK Ready!");
-
+  
       const playerInstance = new window.Spotify.Player({
         name: "Weather Playlist Player",
         getOAuthToken: (cb) => {
@@ -54,37 +54,43 @@ const App: React.FC = () => {
         },
         volume: 0.5,
       });
-
+  
       setPlayer(playerInstance);
-
+  
       playerInstance.addListener("ready", ({ device_id }) => {
-        console.log("Ready with Device ID", device_id);
+        console.log("✅ Ready with Device ID:", device_id);
         setDeviceId(device_id);
       });
-
+  
       playerInstance.addListener("not_ready", ({ device_id }) => {
-        console.log("Device ID has gone offline", device_id);
+        console.log("❌ Device ID has gone offline:", device_id);
       });
-
-      playerInstance.connect();
-    }
+  
+      playerInstance.connect().then((success) => {
+        if (success) {
+          console.log("✅ Spotify Player connected successfully!");
+        } else {
+          console.log("❌ Spotify Player failed to connect!");
+        }
+      });
+    };
   }, [spotifyToken]);
   
       
 
   // Fetch and set Spotify token on mount
  useEffect(() => {
-  const fetchToken = async () => {
-    const token = await getSpotifyToken();
-    if(token) {
+    //Extract token from URL if redirected from spotify login
+    const hash = window.location.hash;
+    const token = new URLSearchParams(hash.replace("#", "?")).get("access_token");
+    if (token){
       setSpotifyToken(token);
-    } else {
-      setError("Failed to fetch Spotify Token.")
+      window.localStorage.setItem("spotify_token", token); //save for later use
+      window.location.hash=""; //clean up url
     }
-  };
-
-  fetchToken();
+   
  }, []);
+
 
   const fetchWeather = async (): Promise<void> => {
     if (!location.trim()) {
@@ -140,6 +146,10 @@ const App: React.FC = () => {
   }, [spotifyToken]);
 
   const playPlaylist = async () => {
+    console.log("Attempting to play...");
+    console.log("deviceId:", deviceId);
+    console.log("spotifyToken:", spotifyToken);
+
     if (!deviceId || !spotifyToken) {
       setError("Spotify is not ready yet.");
       return;
@@ -158,6 +168,7 @@ const App: React.FC = () => {
       setError("Could not start playback.");
     });
 
+    player.activateElement();
   
     try {
       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -171,6 +182,7 @@ const App: React.FC = () => {
         }),
       });
 
+      console.log("Playback started");
       setIsPlaying(true);
     } catch(error) {
       console.error("Error starting playback:", error);
@@ -212,7 +224,7 @@ const App: React.FC = () => {
         value={location}
         onChange={(e) => setLocation(e.target.value)}
         />
-
+  
         <button
           className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
           onClick={fetchWeather}
@@ -239,15 +251,24 @@ const App: React.FC = () => {
               onClick={playPlaylist}
               className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
               >
-                {isPlaying ? "Playing" : "Play Playlist"}
+                {isPlaying ? "Playing" : "Play"}
               </button>
               <button 
                 onClick={pausePlaylist}
+                className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
               >
                 Pause
               </button>
             </div>
           )}
+          <div>
+            {!spotifyToken ? (
+              <button onClick={getSpotifyToken}>Login with Spotify</button>
+            ) : (
+              <p>✅ Logged into Spotify</p>
+            )}
+          </div>
+          
     </div>
   );
 }

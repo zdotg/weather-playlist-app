@@ -1,31 +1,18 @@
-const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
+const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+const SPOTIFY_REDIRECT_URI = "http://localhost:5175/"; // Change this in production
 
-interface SpotifyAuthResponse {
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-}
+export const getSpotifyToken = () => {
+  const scopes = [
+    "streaming", 
+    "user-read-email", 
+    "user-read-private", 
+    "user-modify-playback-state", 
+    "user-read-playback-state", 
+    "user-read-currently-playing"
+  ].join(" "); // Use space between scopes
 
-export const getSpotifyToken = async (): Promise<string | null> => {
-    try {
-        const response = await fetch("https://accounts.spotify.com/api/token", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                Authorization: `Basic ${btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)}`,
-            },
-            body: "grant_type=client_credentials",
-        });
+  const authUrl = `https://accounts.spotify.com/authorize?client_id=${SPOTIFY_CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(SPOTIFY_REDIRECT_URI)}&scope=${encodeURIComponent(scopes)}`;
 
-        if (!response.ok) {
-            throw new Error("Failed to retrieve access token");
-        }
-
-        const data: SpotifyAuthResponse = await response.json();
-        return data.access_token;
-    } catch (error) {
-        console.error("Error fetching Spotify Token:", error);
-        return null;
-    }
-}
+  console.log("Spotify Auth URL:",authUrl); // Log the URL for debugging purposes
+  window.location.href = authUrl; // Redirect user to Spotify login
+};
