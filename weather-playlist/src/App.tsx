@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getSpotifyToken } from "./utils/getSpotifyToken";
+import { WEATHER_PLAYLISTS, DEFAULT_PLAYLIST_ID } from "./utils/playlistMapping";
 
 interface WeatherData {
   current_weather: {
@@ -14,7 +15,7 @@ interface Playlist {
   external_urls: { spotify: string };
 }
 
-const PLAYLIST_ID = "0sBrAwNvNMdJFNoPAimsfA";
+// const PLAYLIST_ID = "0sBrAwNvNMdJFNoPAimsfA";
 
 const loadSpotifySDK = () => {
   if(!window.Spotify){
@@ -126,31 +127,52 @@ const App: React.FC = () => {
 
 
   const fetchPlaylist = useCallback(async () => {
-    if(!spotifyToken) {
-      setError("Spotify token is missing");
-      return;
+    if (!spotifyToken || !weather) {
+        setError("Spotify token or weather data is missing");
+        return;
     }
+
+    const weatherCode = weather.current_weather.weathercode;
+    console.log(`Weather Code: ${weatherCode}`);
+
+    const playlistId = WEATHER_PLAYLISTS[weatherCode] || DEFAULT_PLAYLIST_ID;
+    console.log(`Playlist ID: ${playlistId}`);
+
+    if (typeof playlistId !== "string") {
+        console.error("Invalid playlist ID:", playlistId);
+        setError("Invalid playlist mapping.");
+        return;
+    }
+
+    console.log(`Using playlist with ID: ${playlistId}`);
 
     setLoading(true);
     setError(null);
-    
-    try {
-      const response = await fetch(`https://api.spotify.com/v1/playlists/${PLAYLIST_ID}`, {
-        headers: {
-          Authorization: `Bearer ${spotifyToken}`,
-        },
-      });
 
-      if (!response.ok) throw new Error("Failed to fetch playlist.");
-      const data: Playlist = await response.json();
-      setPlaylist(data);
-      console.log("Spotify Playlist:", data);
+    try {
+        const response = await fetch(`http://localhost:5000/spotify/playlist/${playlistId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${spotifyToken}`, // ✅ Make sure this is sent
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch playlist. Status: ${response.status}`);
+        }
+
+        const data: Playlist = await response.json();
+        setPlaylist(data);
+        console.log("✅ Spotify Playlist:", data);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An unknown error occurred");
+        console.error("❌ Error fetching playlist:", error);
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [spotifyToken]);
+}, [spotifyToken, weather]);
+
 
   const playPlaylist = async () => {
     console.log("Attempting to play...");
@@ -233,7 +255,7 @@ const App: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          context_uri: `spotify:playlist:${PLAYLIST_ID}`,
+          context_uri: `spotify:playlist:${WEATHER_PLAYLISTS}`,
         }),
       });
   
