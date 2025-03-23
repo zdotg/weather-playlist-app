@@ -13,6 +13,7 @@ interface Playlist {
   name: string;
   images: { url: string}[];
   external_urls: { spotify: string };
+  uri: string;
 }
 
 // const PLAYLIST_ID = "0sBrAwNvNMdJFNoPAimsfA";
@@ -89,14 +90,17 @@ const App: React.FC = () => {
  useEffect(() => {
     //Extract token from URL if redirected from spotify login
     const hash = window.location.hash;
-    const token = new URLSearchParams(hash.replace("#", "?")).get("access_token");
+    const tokenFromUrl = new URLSearchParams(hash.replace("#", "?")).get("access_token");
+    const storedToken = localStorage.getItem("spotify_token");
     
-    if (token){
-      setSpotifyToken(token);
-      window.localStorage.setItem("spotify_token", token); //save for later use
+    
+    if (tokenFromUrl){
+      setSpotifyToken(tokenFromUrl);
+      localStorage.setItem("spotify_token", tokenFromUrl);
       window.location.hash=""; //clean up url
+    } else if (storedToken) {
+      setSpotifyToken(storedToken);
     }
-   
  }, []);
 
 
@@ -255,7 +259,8 @@ const App: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          context_uri: `spotify:playlist:${WEATHER_PLAYLISTS}`,
+          context_uri: `spotify:playlist:${playlist?.uri.split(":").pop()}`, 
+
         }),
       });
   
