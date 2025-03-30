@@ -90,20 +90,33 @@ const App: React.FC = () => {
  useEffect(() => {
     //Extract token from URL if redirected from spotify login
     const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', '?'));
     const tokenFromUrl = new URLSearchParams(hash.replace("#", "?")).get("access_token");
+    const expiresIn = params.get("expires_in");
     const storedToken = localStorage.getItem("spotify_token");
+    const storedExpiration = localStorage.getItem("spotify_token_expires_at");
     
     
-    if (tokenFromUrl){
+    if (tokenFromUrl && expiresIn) {
+      const expirationTime = Date.now() + Number(expiresIn) * 1000;
       setSpotifyToken(tokenFromUrl);
       localStorage.setItem("spotify_token", tokenFromUrl);
+      localStorage.setItem("spotify_token_expires_at", expirationTime.toString());
       window.location.hash=""; //clean up url
-    } else if (storedToken) {
-      setSpotifyToken(storedToken);
+    } else if (storedToken && storedExpiration) {
+      const now = Date.now();
+      const expiresAt = parseInt(storedExpiration, 10);
+
+      if (now < expiresAt){
+        setSpotifyToken(storedToken);
+      } else {
+        //re-authenticate automatically
+        getSpotifyToken();
+      }
     }
  }, []);
 
-
+// Weather fetching component
   const fetchWeather = async (): Promise<void> => {
     if (!location.trim()) {
       setError("Please enter a valid city name.");
@@ -112,17 +125,29 @@ const App: React.FC = () => {
 
     setLoading(true);
     setError(null);
-
-    const apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&current_weather=true';
-
+    // const apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&current_weather=true';
     try {
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error("Failed to fetch weather data.");
-      const data: WeatherData = await response.json();
-      setWeather(data); //save the data to state
-      console.log("Weather Data:", data);
+      // Get lat/lon from city name
+      const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`);
+      if (!geoResponse.ok) throw new Error("Failed to fetch weather location data.");
+      const geoData = await geoResponse.json();
+
+      const place = geoData.results?.[0];
+      if(!place) throw new Error("City not found");
+
+      const { latitude, longitude, name, country } = place;
+      console.log(`Location found: ${name}, ${country}, [${latitude}, ${longitude}]`);
+
+      // Step 2: Fetch eather using coordinates
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+      );
+      if(!weatherResponse.ok) throw new Error("Failed to fetch weather data.");
+      const weatherData: WeatherData = await weatherResponse.json();
+
+      setWeather(weatherData);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An unknown error occurre");
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setLoading(false);
     }
@@ -146,6 +171,12 @@ const App: React.FC = () => {
         console.error("Invalid playlist ID:", playlistId);
         setError("Invalid playlist mapping.");
         return;
+    }
+    // Playlist fallback for invalid IDs
+    if (!playlistId || typeof playlistId !== "string" || playlistId.length < 10) {
+      console.error("❌ Invalid playlist ID for weather code:", weatherCode);
+      setError("Something went wrong with the playlist mapping.");
+      return;
     }
 
     console.log(`Using playlist with ID: ${playlistId}`);
