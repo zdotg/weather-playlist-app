@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getSpotifyToken } from "./utils/getSpotifyToken";
 import { WEATHER_PLAYLISTS, DEFAULT_PLAYLIST_ID } from "./utils/playlistMapping";
+import { getFriendlyErrorMessage } from "./utils/getFriendlyErrorMessage";
 
 interface WeatherData {
   current_weather: {
@@ -147,7 +148,7 @@ const App: React.FC = () => {
 
       setWeather(weatherData);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An unknown error occurred");
+      setError(getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -157,7 +158,7 @@ const App: React.FC = () => {
 
   const fetchPlaylist = useCallback(async () => {
     if (!spotifyToken || !weather) {
-        setError("Spotify token or weather data is missing");
+        setError("Spotify token or weather data is missing! Please login or try again.");
         return;
     }
 
@@ -169,7 +170,7 @@ const App: React.FC = () => {
 
     if (typeof playlistId !== "string") {
         console.error("Invalid playlist ID:", playlistId);
-        setError("Invalid playlist mapping.");
+        setError("Somethingwent wrong loading the playlist. Try refreshing.");
         return;
     }
     // Playlist fallback for invalid IDs
@@ -201,10 +202,8 @@ const App: React.FC = () => {
         setPlaylist(data);
         console.log("✅ Spotify Playlist:", data);
     } catch (error) {
-        console.error("❌ Error fetching playlist:", error);
-        setError(error instanceof Error ? error.message : "An unknown error occurred");
-    } finally {
-        setLoading(false);
+      console.error("❌ Error fetching playlist:", error);
+      setError(getFriendlyErrorMessage(error));
     }
 }, [spotifyToken, weather]);
 
@@ -216,7 +215,7 @@ const App: React.FC = () => {
     console.log("player:", playerRef.current);
   
     if (!deviceId || !spotifyToken) {
-      setError("Spotify is not ready yet.");
+      setError("Spotify is not ready yet. Please try again later.");
       return;
     }
   
@@ -264,8 +263,7 @@ const App: React.FC = () => {
       }
   
       if (!state || !state.track_window?.current_track) {
-        console.warn("⚠️ No track loaded. Forcing a queue update...");
-  
+        setError("Spotify is not playing a track yet. Try clicking play again.");
         // Force a track to be added to the queue
         await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: "PUT",
@@ -303,7 +301,7 @@ const App: React.FC = () => {
       setIsPlaying(true);
     } catch (error) {
       console.error("❌ Error starting playback:", error);
-      setError("Could not start playback");
+      setError(getFriendlyErrorMessage(error));
     }
   };
   
@@ -333,12 +331,12 @@ const App: React.FC = () => {
           setIsPlaying(false);
         }).catch(error => {
           console.error("❌ Error pausing:", error);
-          setError("Could not pause playback.");
+          setError(getFriendlyErrorMessage(error));
         });
       }, 400); // 400ms delay
     }).catch(error => {
       console.error("❌ Error getting current state:", error);
-      setError("Could not retrieve player state.");
+      setError(getFriendlyErrorMessage(error));
     });
   };
   
