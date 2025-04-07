@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getSpotifyToken } from "./utils/getSpotifyToken";
 import { WEATHER_PLAYLISTS, DEFAULT_PLAYLIST_ID } from "./utils/playlistMapping";
 import { getFriendlyErrorMessage } from "./utils/getFriendlyErrorMessage";
+import LoadingIndicator from "./components/LoadingIndicator";
+import ErrorMessage from "./components/ErrorMessage";
 
 interface WeatherData {
   current_weather: {
@@ -204,6 +206,8 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("❌ Error fetching playlist:", error);
       setError(getFriendlyErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
 }, [spotifyToken, weather]);
 
@@ -350,53 +354,56 @@ const App: React.FC = () => {
   }, [weather, fetchPlaylist]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-3xl font-bold text-blue-600">Weather-Based Playlist!</h1>
-
-      <input
-        type="text"
-        placeholder="Enter city name"
-        className="border border-gray-300 rounded p-2 mt-4"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        />
-  
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 md:px-10 bg-gray-100">
+      <h1 className="text-3xl sm:text-4xlfont-bold text-blue-600 text-center mb-6">Weather-Based Playlist!</h1>
+      <div className="w-full max-w-md space-y-4">
+        <input
+          type="text"
+          placeholder="Enter city name"
+          className="w-full border border-gray-300 rounded px-4 py-2mt-4"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          />
+    
         <button
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={fetchWeather}
-          disabled={!spotifyToken}
-          >
-           {spotifyToken ? "Get Playlist" : "Loading Spotify..."}
-          </button>
+            className="w-full mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            onClick={fetchWeather}
+            disabled={!spotifyToken}
+        >
+          {spotifyToken ? "Get Playlist" : "Loading Spotify..."}
+        </button>
+      </div>
+     
 
-          {loading && <p className="text-gray-600 mt-4">Loading...</p>}
-          {error && <p className="text-red-500 mt-4">{error}</p>}
-
-          {weather && (
-            <div className="mt-4">
-              <p>Temperature: {weather.current_weather.temperature}°C</p>
-              <p>Weather Code: {weather.current_weather.weathercode}</p>
-            </div>
-          )}
-
-          {playlist && (
-            <div className="mt-4 p-4 border rounded shadow-md bg-white">
-              <h2 className="text-xl font-bold">{playlist.name}</h2>
-              <img src={playlist.images[0].url} alt={playlist.name} className="w-64 rounded" />
-              <button
+      <div className="mt-6">
+        {loading && <LoadingIndicator />}
+        {error && <ErrorMessage message={error} />}
+        {weather && (
+          <div className="text-sm text-gray-700">
+            <p>Temperature: {weather.current_weather.temperature}°C</p>
+            <p>Weather Code: {weather.current_weather.weathercode}</p>
+          </div>
+        )}
+      </div>    
+      
+       {playlist && (
+          <div className="w-full max-w-md mt-8 p-4 border rounded shadow-md bg-white">
+            <h2 className="text-xl font-bold">{playlist.name}</h2>
+            <img src={playlist.images[0].url} alt={playlist.name} className="w-64 rounded" />
+            <button
               onClick={playPlaylist}
               className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                {isPlaying ? "Playing" : "Play"}
-              </button>
-              <button 
-                onClick={pausePlaylist}
-                className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                Pause
-              </button>
-            </div>
-          )}
+            >
+              {isPlaying ? "Playing" : "Play"}
+            </button>
+            <button 
+              onClick={pausePlaylist}
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Pause
+            </button>
+          </div>
+        )}
           <div>
             {!spotifyToken ? (
               <button onClick={getSpotifyToken}>Login with Spotify</button>
