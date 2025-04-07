@@ -4,6 +4,7 @@ import { WEATHER_PLAYLISTS, DEFAULT_PLAYLIST_ID } from "./utils/playlistMapping"
 import { getFriendlyErrorMessage } from "./utils/getFriendlyErrorMessage";
 import LoadingIndicator from "./components/LoadingIndicator";
 import ErrorMessage from "./components/ErrorMessage";
+import NowPlaying from "./components/NowPlaying";
 
 interface WeatherData {
   current_weather: {
@@ -355,65 +356,63 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 md:px-10 bg-gray-100">
-      <h1 className="text-3xl sm:text-4xlfont-bold text-blue-600 text-center mb-6">Weather-Based Playlist!</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold text-blue-600 text-center mb-6">
+        Weather-Based Playlist!
+      </h1>
+  
       <div className="w-full max-w-md space-y-4">
         <input
           type="text"
           placeholder="Enter city name"
-          className="w-full border border-gray-300 rounded px-4 py-2mt-4"
+          className="w-full border border-gray-300 rounded px-4 py-2 mt-4"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          />
-    
+        />
+  
         <button
-            className="w-full mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            onClick={fetchWeather}
-            disabled={!spotifyToken}
+          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          onClick={fetchWeather}
+          disabled={!spotifyToken}
         >
           {spotifyToken ? "Get Playlist" : "Loading Spotify..."}
         </button>
       </div>
-     
-
+  
       <div className="mt-6">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
         {weather && (
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-gray-700 mt-2 text-center">
             <p>Temperature: {weather.current_weather.temperature}°C</p>
             <p>Weather Code: {weather.current_weather.weathercode}</p>
           </div>
         )}
-      </div>    
-      
-       {playlist && (
-          <div className="w-full max-w-md mt-8 p-4 border rounded shadow-md bg-white">
-            <h2 className="text-xl font-bold">{playlist.name}</h2>
-            <img src={playlist.images[0].url} alt={playlist.name} className="w-64 rounded" />
-            <button
-              onClick={playPlaylist}
-              className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              {isPlaying ? "Playing" : "Play"}
-            </button>
-            <button 
-              onClick={pausePlaylist}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Pause
-            </button>
-          </div>
+      </div>
+  
+      {playlist && (
+        <NowPlaying
+          playlistName={playlist.name}
+          imageUrl={playlist.images[0].url}
+          isPlaying={isPlaying}
+          onPlay={playPlaylist}
+          onPause={pausePlaylist}
+        />
+      )}
+  
+      <div className="mt-6">
+        {!spotifyToken ? (
+          <button
+            onClick={getSpotifyToken}
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+          >
+            Login with Spotify
+          </button>
+        ) : (
+          <p className="text-green-600 font-medium">✅ Logged into Spotify</p>
         )}
-          <div>
-            {!spotifyToken ? (
-              <button onClick={getSpotifyToken}>Login with Spotify</button>
-            ) : (
-              <p>✅ Logged into Spotify</p>
-            )}
-          </div>
-          
+      </div>
     </div>
-  );
+  );  
 }
 
 export default App;
