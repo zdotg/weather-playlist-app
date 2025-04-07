@@ -142,7 +142,7 @@ const App: React.FC = () => {
       const { latitude, longitude, name, country } = place;
       console.log(`Location found: ${name}, ${country}, [${latitude}, ${longitude}]`);
 
-      // Step 2: Fetch eather using coordinates
+      // Step 2: Fetch either using coordinates
       const weatherResponse = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
       );
@@ -355,34 +355,34 @@ const App: React.FC = () => {
   }, [weather, fetchPlaylist]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 md:px-10 bg-gray-100">
-      <h1 className="text-3xl sm:text-4xl font-bold text-blue-600 text-center mb-6">
-        Weather-Based Playlist!
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 lg:px-12 bg-gray-100">
+      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 text-center mb-8">
+        Weather-Based Playlist
       </h1>
   
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl space-y-4">
         <input
           type="text"
           placeholder="Enter city name"
-          className="w-full border border-gray-300 rounded px-4 py-2 mt-4"
+          className="w-full border border-gray-300 rounded px-4 py-2 text-base sm:text-lg"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
   
         <button
-          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 transition"
           onClick={fetchWeather}
           disabled={!spotifyToken}
         >
-          {spotifyToken ? "Get Playlist" : "Loading Spotify..."}
+          {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
         </button>
       </div>
   
-      <div className="mt-6">
+      <div className="mt-6 w-full max-w-md sm:max-w-xl lg:max-w-2xl">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
         {weather && (
-          <div className="text-sm text-gray-700 mt-2 text-center">
+          <div className="text-sm sm:text-base text-gray-700 text-center mt-4">
             <p>Temperature: {weather.current_weather.temperature}°C</p>
             <p>Weather Code: {weather.current_weather.weathercode}</p>
           </div>
@@ -390,29 +390,28 @@ const App: React.FC = () => {
       </div>
   
       {playlist && (
-        <NowPlaying
-          playlistName={playlist.name}
-          imageUrl={playlist.images[0].url}
-          isPlaying={isPlaying}
-          onPlay={playPlaylist}
-          onPause={pausePlaylist}
-        />
+        <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl mt-8">
+          <NowPlaying
+            playlistName={playlist.name}
+            imageUrl={playlist.images[0].url}
+            isPlaying={isPlaying}
+            onPlay={playPlaylist}
+            onPause={pausePlaylist}
+          />
+        </div>
       )}
   
-      <div className="mt-6">
+      <div className="mt-6 text-sm text-gray-600">
         {!spotifyToken ? (
-          <button
-            onClick={getSpotifyToken}
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-          >
+          <button onClick={getSpotifyToken} className="underline text-blue-500 hover:text-blue-700">
             Login with Spotify
           </button>
         ) : (
-          <p className="text-green-600 font-medium">✅ Logged into Spotify</p>
+          <p>✅ Logged into Spotify</p>
         )}
       </div>
     </div>
-  );  
+  );   
 }
 
 export default App;
