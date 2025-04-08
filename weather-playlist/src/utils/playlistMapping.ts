@@ -5,8 +5,8 @@ export const WEATHER_PLAYLISTS: Record<number, string> = {
   1: "7AzwBpqBRHYPDB7D8jrgYv", // 🌤️ Partly Cloudy – Chill & Groove
   2: "3dGQU3goyFRmETtgxLax4V", // 🌥️ Mostly Cloudy – Chill & Groove
   3: "5HB4o8ybCxmfRRPHndLIan", // ☁️ Overcast 
-  45: "5yOLvUuGkBXBF3TR4LQIDf", // 🌫️ Fog/Mist – Ambient Focus or Cinematic Mood
-  48: "5yOLvUuGkBXBF3TR4LQIDf", // 🌁 Dense Fog – Ambient
+  45: "4puKKbk5xNIpmtYUI2OYzt", // 🌫️ Fog/Mist – Ambient Focus or Cinematic Mood
+  48: "4puKKbk5xNIpmtYUI2OYzt", // 🌁 Dense Fog – Ambient
   51: "6WIoL84XdrOUbkRh22utBB", // 🌧️ Moderate Rain – Rainy Mood
   55: "41RUHgoROnaeyXk65cbRFI", // 🌧️ Heavy Rain – Rainy Mood
   61: "41RUHgoROnaeyXk65cbRFI", // 🌧️ Light Showers

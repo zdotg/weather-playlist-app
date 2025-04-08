@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [manualWeatherCode, setManualWeatherCode] = useState<number | null>(null);
 
   const playerRef = useRef<Spotify.Player | null>(null);
 
@@ -167,7 +168,7 @@ const App: React.FC = () => {
         return;
     }
 
-    const weatherCode = weather.current_weather.weathercode;
+    const weatherCode = manualWeatherCode ?? weather.current_weather.weathercode;
     console.log(`Weather Code: ${weatherCode}`);
 
     const playlistId = WEATHER_PLAYLISTS[weatherCode] || DEFAULT_PLAYLIST_ID;
@@ -212,7 +213,7 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-}, [spotifyToken, weather]);
+}, [spotifyToken, weather, manualWeatherCode]);
 
 
   const playPlaylist = async () => {
@@ -356,7 +357,11 @@ const App: React.FC = () => {
     }
   }, [weather, fetchPlaylist]);
 
-  const theme = weather ? getWeatherTheme(weather.current_weather.weathercode) : "default";
+  const theme = (manualWeatherCode !== null || weather?.current_weather?.weathercode !== undefined)
+  ? getWeatherTheme(manualWeatherCode ?? weather!.current_weather!.weathercode)
+  : "default";
+
+
   const backgroundClass = `bg-gradient-to-br ${THEME_BACKGROUNDS[theme]}`;
 
   return (
@@ -381,6 +386,25 @@ const App: React.FC = () => {
         >
           {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
         </button>
+
+        <select
+          className="w-full border border-gray-300 rounded px-4 py-2 text-base sm:text-lg mt-2"
+          value={manualWeatherCode ?? ''}
+          onChange={(e) => {
+            const value = e.target.value;
+            setManualWeatherCode(value ? parseInt(value) : null);
+          }}
+        >
+          <option value="">🌦️ Use Live Weather</option>
+          <option value="0">☀️ Sunny</option>
+          <option value="1">🌤️ Partly Cloudy</option>
+          <option value="3">☁️ Overcast</option>
+          <option value="45">🌫️ Foggy</option>
+          <option value="51">🌧️ Light Rain</option>
+          <option value="65">⛈️ Heavy Showers</option>
+          <option value="71">❄️ Light Snow</option>
+          <option value="95">🌩️ Storm</option>
+        </select>
       </div>
   
       <div className="mt-6 w-full max-w-md sm:max-w-xl lg:max-w-2xl">

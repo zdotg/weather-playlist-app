@@ -1,5 +1,5 @@
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-const SPOTIFY_REDIRECT_URI = "http://localhost:5180/"; // Change this in production
+const SPOTIFY_REDIRECT_URI = "http://localhost:5173/"; // Change this in production
 
 export const getSpotifyToken = () => {
   const scopes = [
