@@ -1,5 +1,8 @@
 {
   "devDependencies": {
-    "@types/spotify-web-playback-sdk": "^0.1.19"
+    "@types/spotify-web-playback-sdk": "^0.1.19",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.3"
   }
 }
