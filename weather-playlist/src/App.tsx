@@ -5,6 +5,8 @@ import { getFriendlyErrorMessage } from "./utils/getFriendlyErrorMessage";
 import LoadingIndicator from "./components/LoadingIndicator";
 import ErrorMessage from "./components/ErrorMessage";
 import NowPlaying from "./components/NowPlaying";
+import { getWeatherTheme } from "./utils/getWeatherTheme";
+import { THEME_BACKGROUNDS } from "./constants/themeBackground";
 
 interface WeatherData {
   current_weather: {
@@ -354,8 +356,11 @@ const App: React.FC = () => {
     }
   }, [weather, fetchPlaylist]);
 
+  const theme = weather ? getWeatherTheme(weather.current_weather.weathercode) : "default";
+  const backgroundClass = `bg-gradient-to-br ${THEME_BACKGROUNDS[theme]}`;
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 lg:px-12 bg-gray-100">
+    <div className={`flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 lg:px-12 ${backgroundClass} text-white`}>
       <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 text-center mb-8">
         Weather-Based Playlist
       </h1>
