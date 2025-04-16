@@ -22,18 +22,6 @@ interface Playlist {
   uri: string;
 }
 
-// const PLAYLIST_ID = "0sBrAwNvNMdJFNoPAimsfA";
-
-const loadSpotifySDK = () => {
-  if(!window.Spotify){
-    const script = document.createElement("script");
-    script.src="https://sdk.scdn.co/spotify-player.js";
-    script.async = true;
-    script.onload = () => console.log("Spotify Web Playback SDK Loaded!");
-    document.body.appendChild(script);
-  }
-};
-
 const App: React.FC = () => {
   const [location, setLocation] = useState<string>("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -49,7 +37,15 @@ const App: React.FC = () => {
 
   // Load Spotify SDK on mount
   useEffect(() => {
-    loadSpotifySDK();
+    if (!window.Spotify) {
+      const script = document.createElement("script");
+      script.src = "https://sdk.scdn.co/spotify-player.js"; // ✅ Use .co, not .com
+      script.async = true;
+      script.onload = () => {
+        console.log("🎵 Spotify SDK Loaded!");
+      };
+      document.body.appendChild(script);
+    }
   
     window.onSpotifyWebPlaybackSDKReady = () => {
       console.log("🎵 Spotify SDK Ready!");
@@ -87,12 +83,8 @@ const App: React.FC = () => {
         });
       }
     };
-  }, [spotifyToken]); // Run only when `spotifyToken` changes
-  
-
-  
+  }, [spotifyToken]); // Only re-run if token changes
       
-
   // Fetch and set Spotify token on mount
  useEffect(() => {
     //Extract token from URL if redirected from spotify login
@@ -102,6 +94,7 @@ const App: React.FC = () => {
     const expiresIn = params.get("expires_in");
     const storedToken = localStorage.getItem("spotify_token");
     const storedExpiration = localStorage.getItem("spotify_token_expires_at");
+ 
     
     
     if (tokenFromUrl && expiresIn) {
@@ -207,6 +200,7 @@ const App: React.FC = () => {
         const data: Playlist = await response.json();
         setPlaylist(data);
         console.log("✅ Spotify Playlist:", data);
+        console.debug("✅ Spotify Playlist fetched:", data.name);
     } catch (error) {
       console.error("❌ Error fetching playlist:", error);
       setError(getFriendlyErrorMessage(error));
@@ -216,106 +210,108 @@ const App: React.FC = () => {
 }, [spotifyToken, weather, manualWeatherCode]);
 
 
-  const playPlaylist = async () => {
-    console.log("Attempting to play...");
-    console.log("deviceId:", deviceId);
-    console.log("spotifyToken:", spotifyToken);
-    console.log("player:", playerRef.current);
-  
-    if (!deviceId || !spotifyToken) {
-      setError("Spotify is not ready yet. Please try again later.");
-      return;
+const playPlaylist = async () => {
+  console.debug("🎵 Attempting playback...");
+
+  if (!deviceId || !spotifyToken) {
+    setError("Spotify is not ready yet. Please try again later.");
+    return;
+  }
+
+  if (!playerRef.current) {
+    setError("Spotify Player is not initialized yet.");
+    return;
+  }
+
+  try {
+    // 1️⃣ Set Web Player as active device
+    const deviceResponse = await fetch("https://api.spotify.com/v1/me/player", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        device_ids: [deviceId],
+        play: false,
+      }),
+    });
+
+    if (!deviceResponse.ok) {
+      throw new Error(`Failed to set active device: ${deviceResponse.statusText}`);
     }
-  
-    if (!playerRef.current) {
-      setError("Spotify Player is not initialized yet.");
-      return;
+
+    // 2️⃣ Wait for a track to be ready
+    let attempts = 0;
+    let state = null;
+
+    while (attempts < 5) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      state = await playerRef.current.getCurrentState();
+
+      if (state?.track_window?.current_track) {
+        console.debug("✅ Web Player is ready with a track loaded!");
+        break;
+      }
+
+      console.debug(`[Playback] Attempt ${attempts + 1}: waiting for track...`);
+      attempts++;
     }
-  
-    try {
-      // 1️⃣ Explicitly set the Web Player as the active device
-      console.log("Setting Web Player as active device...");
-      const deviceResponse = await fetch("https://api.spotify.com/v1/me/player", {
+
+    if (!state?.track_window?.current_track) {
+      setError("Spotify is not playing a track yet. Try clicking play again.");
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          device_ids: [deviceId],
-          play: false, // Just activate the device
+          uris: ["spotify:track:3n3Ppam7vgaVa1iaRUc9Lp"],
         }),
       });
-  
-      if (!deviceResponse.ok) {
-        throw new Error(`Failed to set active device: ${deviceResponse.statusText}`);
-      }
-      console.log("✅ Web Player set as active device!");
-  
-      // 2️⃣ Ensure the Web Player has a track loaded before playing
-      console.log("⏳ Waiting for Spotify Web Player to confirm readiness...");
-      let attempts = 0;
-      let state = null;
-  
-      while (attempts < 5) { // Retry up to 5 times
-        await new Promise((resolve) => setTimeout(resolve, 1500)); // Wait 1.5 seconds
-        state = await playerRef.current.getCurrentState();
-  
-        if (state && state.track_window?.current_track) {
-          console.log("✅ Web Player is ready with a track loaded!");
-          break;
-        }
-  
-        console.log(`🔄 Checking Web Player state... Attempt ${attempts + 1}`);
-        attempts++;
-      }
-  
-      if (!state || !state.track_window?.current_track) {
-        setError("Spotify is not playing a track yet. Try clicking play again.");
-        // Force a track to be added to the queue
-        await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${spotifyToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            uris: [`spotify:track:3n3Ppam7vgaVa1iaRUc9Lp`], // A placeholder track to queue up (replace with a valid track ID)
-          }),
-        });
-  
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for Spotify to process
-      }
-  
-      // 3️⃣ Start Playback
-      console.log("Starting playback...");
-      const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${spotifyToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          context_uri: `spotify:playlist:${playlist?.uri.split(":").pop()}`, 
-
-        }),
-      });
-  
-      if (!playResponse.ok) {
-        throw new Error(`Failed to start playback: ${playResponse.statusText}`);
-      }
-  
-      console.log("✅ Playback started successfully");
-      setIsPlaying(true);
-    } catch (error) {
-      console.error("❌ Error starting playback:", error);
-      setError(getFriendlyErrorMessage(error));
+      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
     }
-  };
-  
-  
-  
 
+    // 3️⃣ Get playlist ID safely
+    const playlistId = playlist?.uri?.split(":")?.pop();
+
+    if (!playlistId || playlistId.length < 10) {
+      console.error("❌ Invalid playlist URI:", playlist?.uri);
+      setError("Couldn’t start playback. Playlist is invalid.");
+      return;
+    }
+
+    const contextUri = `spotify:playlist:${playlistId}`;
+    console.debug("🎧 Using context URI:", contextUri);
+
+    // 4️⃣ Start Playback
+    const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        context_uri: contextUri,
+      }),
+    });
+
+    if (!playResponse.ok) {
+      throw new Error(`Failed to start playback: ${playResponse.statusText}`);
+    }
+
+    setIsPlaying(true);
+    console.debug("✅ Playback started successfully");
+
+  } catch (error) {
+    console.error("❌ Error starting playback:", error);
+    setError(getFriendlyErrorMessage(error));
+  }
+};
+   
   const pausePlaylist = () => {
     console.log("Attempting to pause...");
     console.log("player:", playerRef.current);
