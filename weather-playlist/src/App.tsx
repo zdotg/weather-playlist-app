@@ -34,6 +34,11 @@ const App: React.FC = () => {
   const [manualWeatherCode, setManualWeatherCode] = useState<number | null>(null);
   const [useFahrenheit, setUseFahrenheit] = useState<boolean>(false);
 
+  const [currentTrack, setCurrentTrack] = useState<{
+    name:string;
+    artist:string;
+  } | null>(null);
+
   const playerRef = useRef<Spotify.Player | null>(null);
 
   const formatTemperature = (celsius:number): string => {
@@ -41,6 +46,8 @@ const App: React.FC = () => {
       ? `${((celsius * 9) / 5 + 32).toFixed(1)}°F`
       : `${celsius.toFixed(1)}°C`;
   };
+
+  
 
   // Load Spotify SDK on mount
   useEffect(() => {
@@ -216,6 +223,31 @@ const App: React.FC = () => {
     }
 }, [spotifyToken, weather, manualWeatherCode]);
 
+const fetchCurrentTrack = async () => {
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+      },
+    });
+
+    if(!response.ok) {
+      throw new Error("Failed to fetch currently playing track");
+    }
+
+    const data = await response.json();
+    const name = data.item?.name;
+    const artist = data.item?.artists?.[0]?.name;
+
+    if (name && artist) {
+      setCurrentTrack({ name, artist });
+    }
+  } catch (err) {
+    console.error("❌ Error fetching currently playing track:", err);
+    setCurrentTrack(null); //fallback to null if there's an error
+  }
+};
+
 
 const playPlaylist = async () => {
   console.debug("🎵 Attempting playback...");
@@ -311,6 +343,7 @@ const playPlaylist = async () => {
     }
 
     setIsPlaying(true);
+    await fetchCurrentTrack();
     console.debug("✅ Playback started successfully");
 
   } catch (error) {
@@ -340,6 +373,7 @@ const playPlaylist = async () => {
         playerRef.current!.pause().then(() => {
           console.log("✅ Playback Paused!");
           setIsPlaying(false);
+          setCurrentTrack(null);
         }).catch(error => {
           console.error("❌ Error pausing:", error);
           setError(getFriendlyErrorMessage(error));
@@ -453,7 +487,13 @@ const playPlaylist = async () => {
           />
         </div>
       )}
-  
+
+      {currentTrack && (
+        <div className="mt-3 text-center text-white text-sm">
+          Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
+        </div>
+      )}
+
       <div className="mt-6 text-sm text-gray-600">
         {!spotifyToken ? (
           <button onClick={getSpotifyToken} className="underline text-blue-500 hover:text-blue-700">
