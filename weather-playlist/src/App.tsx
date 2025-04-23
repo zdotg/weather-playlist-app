@@ -32,8 +32,15 @@ const App: React.FC = () => {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [manualWeatherCode, setManualWeatherCode] = useState<number | null>(null);
+  const [useFahrenheit, setUseFahrenheit] = useState<boolean>(false);
 
   const playerRef = useRef<Spotify.Player | null>(null);
+
+  const formatTemperature = (celsius:number): string => {
+    return useFahrenheit 
+      ? `${((celsius * 9) / 5 + 32).toFixed(1)}°F`
+      : `${celsius.toFixed(1)}°C`;
+  };
 
   // Load Spotify SDK on mount
   useEffect(() => {
@@ -402,18 +409,39 @@ const playPlaylist = async () => {
           <option value="95">🌩️ Storm</option>
         </select>
       </div>
-  
+
+  {/* temperature and weather code */}
       <div className="mt-6 w-full max-w-md sm:max-w-xl lg:max-w-2xl">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
         {weather && (
-          <div className="text-sm sm:text-base text-gray-700 text-center mt-4">
-            <p>Temperature: {weather.current_weather.temperature}°C</p>
-            <p>Weather Code: {weather.current_weather.weathercode}</p>
+          <div className="text-center mt-4 text-white text-lg font-medium">
+            <p>
+              It’s {formatTemperature(weather.current_weather.temperature)} and{" "}
+              {theme === "sunny" ? "sunny ☀️" :
+              theme === "cloudy" ? "cloudy ☁️" :
+              theme === "rainy" ? "rainy 🌧️" :
+              "a unique day 🌤️"}{" "}
+              in {location || "your area"}.
+            </p>
+            <p>Enjoy your weather-based playlist!</p>
+            <div className='mt-4 flex items-center justify-center gap-3'>
+              <span className='text-sm text-white'>{useFahrenheit ? "°F" : "°C"}</span>
+              <label className='relative inline-flex items-center cursor-pointer'>
+                <input 
+                  type='checkbox'
+                  className='sr-only peer'
+                  checked={useFahrenheit}
+                  onChange={() => setUseFahrenheit(!useFahrenheit)}
+                />
+                <div className='w-11 h-6 bg-gray-300 rounded-full peer peer-focusing:ring-2 peer-focus:ring-blue-500 peer-checked:bg-blue-500 transition-all duration-300'></div>
+                <div className='absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md transform peer-checked:translate-x-full transition-all duration-300'></div>
+              </label>
+            </div>
           </div>
         )}
       </div>
-  
+
       {playlist && (
         <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl mt-8">
           <NowPlaying
