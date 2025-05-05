@@ -402,7 +402,7 @@ const playPlaylist = async () => {
   const backgroundClass = `bg-gradient-to-br ${THEME_BACKGROUNDS[theme]}`;
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen px-4 py-8 sm:px-6 lg:px-12 ${backgroundClass} text-white`}>
+    <div className={`flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 ${backgroundClass} text-white`}>
       <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 text-center mb-8">
         Weather-Based Playlist
       </h1>
@@ -415,7 +415,13 @@ const playPlaylist = async () => {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
-  
+
+        {!weather && !loading && !error && (
+          <div className="mt-6 text-center text-white text-lg">
+            Enter a city above to get a vibe-matched playlist 🎧
+          </div>
+        )}
+
         <button
           className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 transition"
           onClick={fetchWeather}
@@ -477,7 +483,7 @@ const playPlaylist = async () => {
       </div>
 
       {playlist && (
-        <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl mt-8">
+        <div className="w-full max-w-xs rounded shadow-md sm:max-w-xl lg:max-w-2xl mt-8 mx-auto">
           <NowPlaying
             playlistName={playlist.name}
             imageUrl={playlist.images[0].url}
@@ -491,6 +497,18 @@ const playPlaylist = async () => {
       {currentTrack && (
         <div className="mt-3 text-center text-white text-sm">
           Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 bg-red-100 text-red-800 p-4 rounded shadow text-center">
+          <p className="mb-2">{error}</p>
+          <button
+            onClick={fetchWeather}
+            className="underline text-blue-600 hover:text-blue-800 transition"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
