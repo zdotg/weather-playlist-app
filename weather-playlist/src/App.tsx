@@ -6,7 +6,7 @@ import LoadingIndicator from "./components/LoadingIndicator";
 import ErrorMessage from "./components/ErrorMessage";
 import NowPlaying from "./components/NowPlaying";
 import { getWeatherTheme } from "./utils/getWeatherTheme";
-import { THEME_BACKGROUNDS } from "./constants/themeBackground";
+
 
 // ✅ Imported shared types
 import { WeatherData, Playlist, TrackInfo } from "./types/types";
@@ -388,64 +388,97 @@ const playPlaylist = async () => {
     }
   }, [weather, fetchPlaylist]);
 
+  const backgroundImageMap: Record<string, string> = {
+    sunny: "./public/assets/backgrounds/sunny_weather.jpg",
+    "partly-cloudy": "./public/assets/backgrounds/cloudy_weather.jpg",
+    cloudy: "./public/assets/backgrounds/cloudy_weather.jpg",
+    fog: "./public/assets/backgrounds/fog_weather.jpg",
+    rain: "./publicassets/backgrounds/rainy_weather.jpg",
+    storm: "./public/assets/backgrounds/storm_weather.jpg",
+    snow: "./public/assets/backgrounds/snow_weather.jpg",
+    default: "./public/assets/backgrounds/default_weather.jpg", // fallback
+  };
+  
   const theme = (manualWeatherCode !== null || weather?.current_weather?.weathercode !== undefined)
-  ? getWeatherTheme(manualWeatherCode ?? weather!.current_weather!.weathercode)
-  : "default";
-
-
-  const backgroundClass = `bg-gradient-to-br ${THEME_BACKGROUNDS[theme]}`;
-
+    ? getWeatherTheme(manualWeatherCode ?? weather!.current_weather!.weathercode)
+    : "default";
+  
+  const backgroundStyle = {
+    backgroundImage: `url(${backgroundImageMap[theme]})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  };
+  
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 ${backgroundClass} text-white`}>
-      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 text-center mb-8">
+    <>
+      {/* Overlay layer for readability */}
+      <div className="absolute inset-0 bg-black bg-opacity-60 z-0" />
+  
+      {/* App content container */}
+      <div
+        style={backgroundStyle}
+        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
+      >
+      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white text-center mb-10 tracking-tight transition-all duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
         Weather-Based Playlist
       </h1>
   
-      <div className="w-full max-w-md sm:max-w-xl lg:max-w-2xl space-y-4">
-        <input
-          type="text"
-          placeholder="Enter city name"
-          className="w-full border border-gray-300 rounded px-4 py-2 text-base sm:text-lg"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-        {/* Fallback UI for No Weather Data */}
-        {!weather && !loading && !error && (
-          <div className="mt-6 text-center text-white text-lg">
-            Enter a city above to get a vibe-matched playlist 🎧
-          </div>
-        )}
+      <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-lg">
+          <input
+            type="text"
+            placeholder="Enter city name"
+            className="w-full bg-white/20 text-white placeholder-white border border-white rounded px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+          {/* Fallback UI for No Weather Data */}
+          {!weather && !loading && !error && (
+            <div className="mt-6 text-center text-white text-lg">
+              Enter a city above to get a vibe-matched playlist 🎧
+            </div>
+          )}
 
-        <button
-          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 transition"
-          onClick={fetchWeather}
-          disabled={!spotifyToken}
-        >
-          {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
-        </button>
+          <button
+            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-md"
+            onClick={fetchWeather}
+            disabled={!spotifyToken}
+          >
+            {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
+          </button>
 
-        <select
-          className="w-full border border-gray-300 rounded px-4 py-2 text-base sm:text-lg mt-2"
-          value={manualWeatherCode ?? ''}
-          onChange={(e) => {
-            const value = e.target.value;
-            setManualWeatherCode(value ? parseInt(value) : null);
-          }}
-        >
+          <select
+            className="w-full bg-white/20 text-white placeholder-white border border-white rounded px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={manualWeatherCode ?? ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setManualWeatherCode(value ? parseInt(value) : null);
+            }}
+          >
           <option value="">🌦️ Use Live Weather</option>
           <option value="0">☀️ Sunny</option>
           <option value="1">🌤️ Partly Cloudy</option>
+          <option value="2">🌥️ Mostly Cloudy</option>
           <option value="3">☁️ Overcast</option>
-          <option value="45">🌫️ Foggy</option>
+          <option value="45">🌫️ Fog</option>
+          <option value="48">🌁 Dense Fog</option>
           <option value="51">🌧️ Light Rain</option>
+          <option value="55">🌧️ Heavy Rain</option>
+          <option value="61">🌦️ Light Showers</option>
+          <option value="63">🌧️ Moderate Showers</option>
           <option value="65">⛈️ Heavy Showers</option>
           <option value="71">❄️ Light Snow</option>
+          <option value="73">❄️ Moderate Snow</option>
+          <option value="75">❄️ Heavy Snow</option>
+          <option value="80">🌧️ Rain Showers</option>
+          <option value="81">⛈️ Thunder Showers</option>
           <option value="95">🌩️ Storm</option>
-        </select>
+          </select>
+        </div>
       </div>
 
   {/* temperature and weather code */}
-      <div className="mt-6 w-full max-w-md sm:max-w-xl lg:max-w-2xl">
+      <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
         {/* If weather has been fetched, display temperature and playlist message */}
@@ -478,7 +511,7 @@ const playPlaylist = async () => {
       </div>
 
       {playlist && (
-        <div className="w-full max-w-xs rounded shadow-md sm:max-w-xl lg:max-w-2xl mt-8 mx-auto">
+        <div className="w-full max-w-xl px-4 sm:px-6 lg:px-8 mt-8">
           <NowPlaying
             playlistName={playlist.name}
             imageUrl={playlist.images[0].url}
@@ -517,6 +550,7 @@ const playPlaylist = async () => {
         )}
       </div>
     </div>
+  </>
   );   
 }
 

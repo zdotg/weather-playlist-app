@@ -7,13 +7,14 @@ export type WeatherTheme =
   | 'snowy'
   | 'default';
   
-export function getWeatherTheme(code: number): WeatherTheme {
-    if (code === 0) return 'sunny';
-    if ([1, 2, 3].includes(code)) return 'cloudy';
-    if ([45, 48].includes(code)) return 'foggy';
-    if ([51, 55, 61, 63, 65, 80].includes(code)) return 'rainy';
-    if ([81, 95].includes(code)) return 'stormy';
-    if ([71, 73, 75].includes(code)) return 'snowy';
-
-    return 'default';
-}
+// utils/getWeatherTheme.ts
+export const getWeatherTheme = (code: number): string => {
+  if ([0].includes(code)) return "sunny";
+  if ([1, 2].includes(code)) return "partly-cloudy";
+  if ([3].includes(code)) return "cloudy";
+  if ([45, 48].includes(code)) return "fog";
+  if ([51, 55, 61, 63, 80].includes(code)) return "rain";
+  if ([65, 81, 95].includes(code)) return "storm";
+  if ([71, 73, 75].includes(code)) return "snow";
+  return "default";
+};
