@@ -8,36 +8,29 @@ import NowPlaying from "./components/NowPlaying";
 import { getWeatherTheme } from "./utils/getWeatherTheme";
 import { THEME_BACKGROUNDS } from "./constants/themeBackground";
 
-interface WeatherData {
-  current_weather: {
-    temperature: number;
-    weathercode: number;
-  };
-}
-
-interface Playlist {
-  name: string;
-  images: { url: string}[];
-  external_urls: { spotify: string };
-  uri: string;
-}
+// ✅ Imported shared types
+import { WeatherData, Playlist, TrackInfo } from "./types/types";
 
 const App: React.FC = () => {
+  // UI and state management
   const [location, setLocation] = useState<string>("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
+
+  // App status
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  //Spotify Integration
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+
+  // Additional features
   const [manualWeatherCode, setManualWeatherCode] = useState<number | null>(null);
   const [useFahrenheit, setUseFahrenheit] = useState<boolean>(false);
 
-  const [currentTrack, setCurrentTrack] = useState<{
-    name:string;
-    artist:string;
-  } | null>(null);
+  const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
 
   const playerRef = useRef<Spotify.Player | null>(null);
 
@@ -49,8 +42,9 @@ const App: React.FC = () => {
 
   
 
-  // Load Spotify SDK on mount
+  // On initial mount, load Spotify Web Playback SDK script
   useEffect(() => {
+    // Only add script if it's not already present
     if (!window.Spotify) {
       const script = document.createElement("script");
       script.src = "https://sdk.scdn.co/spotify-player.js"; // ✅ Use .co, not .com
@@ -60,7 +54,8 @@ const App: React.FC = () => {
       };
       document.body.appendChild(script);
     }
-  
+    
+    // Initialize player once SDK is ready
     window.onSpotifyWebPlaybackSDKReady = () => {
       console.log("🎵 Spotify SDK Ready!");
   
@@ -97,11 +92,11 @@ const App: React.FC = () => {
         });
       }
     };
-  }, [spotifyToken]); // Only re-run if token changes
+  }, [spotifyToken]); // Only re-run if token changes (re-auth flow)
       
   // Fetch and set Spotify token on mount
  useEffect(() => {
-    //Extract token from URL if redirected from spotify login
+    // Try to extract token from URL hash (Spotify OAuth redirect)
     const hash = window.location.hash;
     const params = new URLSearchParams(hash.replace('#', '?'));
     const tokenFromUrl = new URLSearchParams(hash.replace("#", "?")).get("access_token");
@@ -109,8 +104,7 @@ const App: React.FC = () => {
     const storedToken = localStorage.getItem("spotify_token");
     const storedExpiration = localStorage.getItem("spotify_token_expires_at");
  
-    
-    
+    // If to exists in URL, store it with an expiration timestamp
     if (tokenFromUrl && expiresIn) {
       const expirationTime = Date.now() + Number(expiresIn) * 1000;
       setSpotifyToken(tokenFromUrl);
@@ -118,6 +112,7 @@ const App: React.FC = () => {
       localStorage.setItem("spotify_token_expires_at", expirationTime.toString());
       window.location.hash=""; //clean up url
     } else if (storedToken && storedExpiration) {
+      // Otherwise, use stored token if it's still valid (within 5 minutes)
       const now = Date.now();
       const expiresAt = parseInt(storedExpiration, 10);
 
@@ -130,7 +125,7 @@ const App: React.FC = () => {
     }
  }, []);
 
-// Weather fetching component
+// Fetch weather data usin Open-Meteo  geocoding and weather APIs
   const fetchWeather = async (): Promise<void> => {
     if (!location.trim()) {
       setError("Please enter a valid city name.");
@@ -139,9 +134,9 @@ const App: React.FC = () => {
 
     setLoading(true);
     setError(null);
-    // const apiUrl = 'https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&current_weather=true';
+
     try {
-      // Get lat/lon from city name
+      // Step 1: Convert city name to coordinates using Open-Meteo's geocoding API
       const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`);
       if (!geoResponse.ok) throw new Error("Failed to fetch weather location data.");
       const geoData = await geoResponse.json();
@@ -152,13 +147,13 @@ const App: React.FC = () => {
       const { latitude, longitude, name, country } = place;
       console.log(`Location found: ${name}, ${country}, [${latitude}, ${longitude}]`);
 
-      // Step 2: Fetch either using coordinates
+      // Step 2: Use lat/lon to fetch current weather
       const weatherResponse = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
       );
       if(!weatherResponse.ok) throw new Error("Failed to fetch weather data.");
       const weatherData: WeatherData = await weatherResponse.json();
-
+      // Store weather data in state
       setWeather(weatherData);
     } catch (error) {
       setError(getFriendlyErrorMessage(error));
@@ -168,16 +163,15 @@ const App: React.FC = () => {
   };
 
 
-
+  // Fetch Spotify playlist based on current weather code
   const fetchPlaylist = useCallback(async () => {
     if (!spotifyToken || !weather) {
         setError("Spotify token or weather data is missing! Please login or try again.");
         return;
     }
-
+    // Determine correct playlist based on weather code mapping
     const weatherCode = manualWeatherCode ?? weather.current_weather.weathercode;
     console.log(`Weather Code: ${weatherCode}`);
-
     const playlistId = WEATHER_PLAYLISTS[weatherCode] || DEFAULT_PLAYLIST_ID;
     console.log(`Playlist ID: ${playlistId}`);
 
@@ -199,6 +193,7 @@ const App: React.FC = () => {
     setError(null);
 
     try {
+      // Request playlist metadata from backend
         const response = await fetch(`http://localhost:5000/spotify/playlist/${playlistId}`, {
             method: "GET",
             headers: {
@@ -248,7 +243,7 @@ const fetchCurrentTrack = async () => {
   }
 };
 
-
+// Start playback of selected playlist using Web Playback SDK
 const playPlaylist = async () => {
   console.debug("🎵 Attempting playback...");
 
@@ -263,7 +258,7 @@ const playPlaylist = async () => {
   }
 
   try {
-    // 1️⃣ Set Web Player as active device
+    // Step 1: Set current device as active player
     const deviceResponse = await fetch("https://api.spotify.com/v1/me/player", {
       method: "PUT",
       headers: {
@@ -280,10 +275,9 @@ const playPlaylist = async () => {
       throw new Error(`Failed to set active device: ${deviceResponse.statusText}`);
     }
 
-    // 2️⃣ Wait for a track to be ready
+    // Step 2: Wait for player to be ready
     let attempts = 0;
     let state = null;
-
     while (attempts < 5) {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       state = await playerRef.current.getCurrentState();
@@ -314,7 +308,6 @@ const playPlaylist = async () => {
       
     }
 
-    // 3️⃣ Get playlist ID safely
     const playlistId = playlist?.uri?.split(":")?.pop();
 
     if (!playlistId || playlistId.length < 10) {
@@ -322,7 +315,8 @@ const playPlaylist = async () => {
       setError("Couldn’t start playback. Playlist is invalid.");
       return;
     }
-
+    
+    // Step 3: Extract URI and start playback
     const contextUri = `spotify:playlist:${playlistId}`;
     console.debug("🎧 Using context URI:", contextUri);
 
@@ -415,7 +409,7 @@ const playPlaylist = async () => {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
-
+        {/* Fallback UI for No Weather Data */}
         {!weather && !loading && !error && (
           <div className="mt-6 text-center text-white text-lg">
             Enter a city above to get a vibe-matched playlist 🎧
@@ -454,6 +448,7 @@ const playPlaylist = async () => {
       <div className="mt-6 w-full max-w-md sm:max-w-xl lg:max-w-2xl">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
+        {/* If weather has been fetched, display temperature and playlist message */}
         {weather && (
           <div className="text-center mt-4 text-white text-lg font-medium">
             <p>
@@ -499,7 +494,7 @@ const playPlaylist = async () => {
           Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
         </div>
       )}
-
+      {/* Error message + Retry button */}
       {error && (
         <div className="mt-4 bg-red-100 text-red-800 p-4 rounded shadow text-center">
           <p className="mb-2">{error}</p>
