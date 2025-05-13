@@ -17,6 +17,11 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
 
+  //Progress Bar
+  const [trackProgress, setTrackProgress] = useState<number>(0); //ms
+  const [trackDuration, setTrackDuration] = useState<number>(0); //ms
+  const progressIntervalRef = useRef<number | undefined>(undefined); 
+
   // App status
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -233,13 +238,21 @@ const fetchCurrentTrack = async () => {
     const data = await response.json();
     const name = data.item?.name;
     const artist = data.item?.artists?.[0]?.name;
+    const duration = data.item?.duration_ms;
+    const progress = data.progress_ms;
+    // const album = data.item?.album?.name;
+    // const albumArt = data.item?.album?.images?.[0]?.url;
 
     if (name && artist) {
       setCurrentTrack({ name, artist });
+      setTrackDuration(duration);
+      setTrackProgress(progress);
     }
   } catch (err) {
     console.error("❌ Error fetching currently playing track:", err);
     setCurrentTrack(null); //fallback to null if there's an error
+    setTrackDuration(0);
+    setTrackProgress(0);
   }
 };
 
@@ -290,6 +303,14 @@ const playPlaylist = async () => {
       console.debug(`[Playback] Attempt ${attempts + 1}: waiting for track...`);
       attempts++;
     }
+
+    setInterval(() => {
+      playerRef.current?.getCurrentState().then((state) => {
+        if(state?.position) {
+          setTrackProgress(state.position)
+        }
+      });
+    }, 1000);
 
     if (!state?.track_window?.current_track) {
       setError("Spotify is not playing a track yet. Try clicking play again.");
@@ -344,11 +365,29 @@ const playPlaylist = async () => {
     console.error("❌ Error starting playback:", error);
     setError(getFriendlyErrorMessage(error));
   }
+  // Clear any existing interval
+  if (progressIntervalRef) clearInterval(progressIntervalRef.current);
+  
+  // Start a new interval
+  progressIntervalRef.current = window.setInterval(() => {
+    playerRef.current?.getCurrentState().then((state) => {
+      if (state?.position) {
+        setTrackProgress(state.position);
+        setTrackDuration(state.duration);
+      }
+    });
+  }, 1000);
 };
-   
+  // Pause the playlist
   const pausePlaylist = () => {
     console.log("Attempting to pause...");
     console.log("player:", playerRef.current);
+
+    if (progressIntervalRef.current !== undefined) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = undefined;
+    }
+
     if (!playerRef.current) {
   setError("Spotify Player is not initialized yet.");
   return;
@@ -378,6 +417,42 @@ const playPlaylist = async () => {
       setError(getFriendlyErrorMessage(error));
     });
   };
+
+  // Skip to the next track
+  const skipToNext = async () => {
+    if (!spotifyToken) return;
+    try {
+      await fetch("https://api.spotify.com/v1/me/player/next", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${spotifyToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      await fetchCurrentTrack(); // Refresh current track info
+      } catch (error) {
+        console.error("❌ Error skipping to next track:", error);
+        setError(getFriendlyErrorMessage(error));
+      }
+    };
+
+     const skipToPrevious = async () => {
+    if (!spotifyToken) return;
+    try {
+      await fetch("https://api.spotify.com/v1/me/player/previous", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${spotifyToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      await fetchCurrentTrack(); // Refresh current track info
+      } catch (error) {
+        console.error("❌ Error skipping to previous track:", error);
+        setError(getFriendlyErrorMessage(error));
+      }
+    };
+
   
 
 
@@ -389,14 +464,14 @@ const playPlaylist = async () => {
   }, [weather, fetchPlaylist]);
 
   const backgroundImageMap: Record<string, string> = {
-    sunny: "./public/assets/backgrounds/sunny_weather.jpg",
-    "partly-cloudy": "./public/assets/backgrounds/cloudy_weather.jpg",
-    cloudy: "./public/assets/backgrounds/cloudy_weather.jpg",
-    fog: "./public/assets/backgrounds/fog_weather.jpg",
-    rain: "./publicassets/backgrounds/rainy_weather.jpg",
-    storm: "./public/assets/backgrounds/storm_weather.jpg",
-    snow: "./public/assets/backgrounds/snow_weather.jpg",
-    default: "./public/assets/backgrounds/default_weather.jpg", // fallback
+    sunny: "/assets/backgrounds/sunny_weather.jpg",
+    "partly-cloudy": "/assets/backgrounds/cloudy_weather.jpg",
+    cloudy: "/assets/backgrounds/cloudy_weather.jpg",
+    fog: "/assets/backgrounds/fog_weather.jpg",
+    rain: "/assets/backgrounds/rainy_weather.jpg",
+    storm: "/assets/backgrounds/storm_weather.jpg",
+    snow: "/assets/backgrounds/snow_weather.jpg",
+    default: "/assets/backgrounds/default_weather.jpg", // fallback
   };
   
   const theme = (manualWeatherCode !== null || weather?.current_weather?.weathercode !== undefined)
@@ -518,6 +593,10 @@ const playPlaylist = async () => {
             isPlaying={isPlaying}
             onPlay={playPlaylist}
             onPause={pausePlaylist}
+            progress={trackProgress}
+            duration={trackDuration}
+            onNext={skipToNext}
+            onPrevious={skipToPrevious}
           />
         </div>
       )}
