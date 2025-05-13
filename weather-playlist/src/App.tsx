@@ -6,7 +6,7 @@ import LoadingIndicator from "./components/LoadingIndicator";
 import ErrorMessage from "./components/ErrorMessage";
 import NowPlaying from "./components/NowPlaying";
 import { getWeatherTheme } from "./utils/getWeatherTheme";
-
+import './App.css';
 
 // ✅ Imported shared types
 import { WeatherData, Playlist, TrackInfo } from "./types/types";
@@ -341,7 +341,15 @@ const playPlaylist = async () => {
     const contextUri = `spotify:playlist:${playlistId}`;
     console.debug("🎧 Using context URI:", contextUri);
 
-    // 4️⃣ Start Playback
+    // Enable shuffle mode
+    await fetch(`https://api.spotify.com/v1/me/player/shuffle?state=true`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    //  Start Playback
     const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: "PUT",
       headers: {
@@ -429,6 +437,11 @@ const playPlaylist = async () => {
           "Content-Type": "application/json",
         },
       });
+
+      setTimeout(() => {
+        fetchCurrentTrack(); // Refresh current track info
+      }, 1000); // Wait for 1 second before 
+
       await fetchCurrentTrack(); // Refresh current track info
       } catch (error) {
         console.error("❌ Error skipping to next track:", error);
@@ -446,6 +459,11 @@ const playPlaylist = async () => {
           "Content-Type": "application/json",
         },
       });
+
+       setTimeout(() => {
+        fetchCurrentTrack(); // Refresh current track info
+      }, 1000); // Wait for 1 second before 
+      
       await fetchCurrentTrack(); // Refresh current track info
       } catch (error) {
         console.error("❌ Error skipping to previous track:", error);
@@ -494,9 +512,9 @@ const playPlaylist = async () => {
         style={backgroundStyle}
         className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
       >
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white text-center mb-10 tracking-tight transition-all duration-300 hover:scale-105 hover:drop-shadow-[0_0_20px_rgba(255,255,255,0.7)]">
-        Weather-Based Playlist
-      </h1>
+     <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-light-300 italic text-white text-center px-6 py-3 rounded-xl shadow-lg bg-white/10 backdrop-blur-md inline-block tracking-tight transition-transform duration-300 hover:animate-bounce hover:drop-shadow-[0_0_15px_rgba(93,255,191,0.6)]">
+      wmx weather mix
+     </h1>
   
       <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-lg">

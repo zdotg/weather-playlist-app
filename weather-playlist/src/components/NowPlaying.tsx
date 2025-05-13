@@ -1,4 +1,5 @@
 import React from 'react';
+import { SkipBack, SkipForward } from 'lucide-react';
 
 interface NowPlayingProps {
   playlistName: string;
@@ -55,15 +56,15 @@ const NowPlaying: React.FC<NowPlayingProps> = ({
       <div className="flex justify-center gap-4 mt-4">
         <button
           onClick={onPrevious}
-          className="px-6 py-2 text-white font-semibold rounded-full transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 bg-blue-500 hover:bg-blue-600"
+          className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white shadow-md transition"
         >
-          Previous
+          <SkipBack className="w-6 h-6" />
         </button>
         <button
           onClick={onNext}
-          className="px-6 py-2 text-white font-semibold rounded-full transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 bg-blue-500 hover:bg-blue-600"
+          className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white shadow-md transition"
         >
-          Next
+          <SkipForward className="w-6 h-6" />
         </button>
       </div>
     </div>
