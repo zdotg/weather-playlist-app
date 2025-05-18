@@ -6,7 +6,8 @@ export const getSpotifyToken = () => {
     "streaming", 
     "user-read-email", 
     "user-read-private", 
-    "user-modify-playback-state", 
+    "user-modify-playback-state",
+    "user-library-modify", 
     "user-read-playback-state", 
     "user-read-currently-playing"
   ].join(" "); // Use space between scopes

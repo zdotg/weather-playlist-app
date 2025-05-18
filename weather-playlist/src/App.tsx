@@ -240,14 +240,22 @@ const fetchCurrentTrack = async () => {
     const artist = data.item?.artists?.[0]?.name;
     const duration = data.item?.duration_ms;
     const progress = data.progress_ms;
+    const id = data.item?.id;
+    const albumArt = data.item?.album?.images?.[0]?.url || ""; // add fallback
     // const album = data.item?.album?.name;
-    // const albumArt = data.item?.album?.images?.[0]?.url;
 
     if (name && artist) {
-      setCurrentTrack({ name, artist });
-      setTrackDuration(duration);
-      setTrackProgress(progress);
-    }
+
+      setCurrentTrack({
+        name,
+        artist,
+        albumArt,
+        id,
+      });
+
+    setTrackDuration(duration);
+    setTrackProgress(progress);
+  }
   } catch (err) {
     console.error("❌ Error fetching currently playing track:", err);
     setCurrentTrack(null); //fallback to null if there's an error
@@ -471,8 +479,36 @@ const playPlaylist = async () => {
       }
     };
 
-  
+  // Save current track function
+  const saveCurrentTrack = async () => {
+  if (!spotifyToken || !currentTrack) {
+    setError("No track to save.");
+    return;
+  }
 
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me/tracks", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${spotifyToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ids: [currentTrack.id], // we need to add this to the TrackInfo type!
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save track to library.");
+    }
+
+    console.log("✅ Track saved to your Liked Songs!");
+  } catch (err) {
+    console.error("❌ Error saving track:", err);
+    setError("Could not save track.");
+  }
+};
+    
 
   // Automatically fetch playlist when weather data is available
   useEffect(() => {
@@ -497,15 +533,16 @@ const playPlaylist = async () => {
     : "default";
   
   const backgroundStyle = {
-    backgroundImage: `url(${backgroundImageMap[theme]})`,
+    backgroundImage: `url(${backgroundImageMap[theme] || backgroundImageMap["default"]})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   };
-  
+    
   return (
   <>
-    {/* Dark overlay for contrast */}
-    <div className="absolute inset-0 bg-black z-0" />
+    {/* Removed Overlay */}
+    <div className="absolute inset-0 z-0" />
 
     {/* Main App Container — Positioned over full-screen background */}
     <div
@@ -615,7 +652,7 @@ const playPlaylist = async () => {
         <div className="w-full max-w-xl px-4 sm:px-6 lg:px-8 mt-8">
           <NowPlaying
             playlistName={playlist.name}
-            imageUrl={playlist.images[0].url} // ✅ replace this with currentTrack.albumArt in the next task
+            imageUrl={currentTrack?.albumArt ?? playlist.images[0].url} // fallback to playlist art
             isPlaying={isPlaying}
             onPlay={playPlaylist}
             onPause={pausePlaylist}
@@ -631,6 +668,12 @@ const playPlaylist = async () => {
       {currentTrack && (
         <div className="mt-3 text-center text-white text-sm">
           Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
+          <button
+            onClick={saveCurrentTrack}
+            className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition "
+          >
+            Save to Liked Songs
+          </button>
         </div>
       )}
 

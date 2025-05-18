@@ -18,6 +18,8 @@ export interface Playlist {
 export interface TrackInfo {
     name: string;
     artist: string;
+    albumArt: string;
+    id: string;
 }
 
 // Wether Theme Options
