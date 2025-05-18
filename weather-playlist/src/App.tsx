@@ -37,6 +37,8 @@ const App: React.FC = () => {
 
   const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
 
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+
   const playerRef = useRef<Spotify.Player | null>(null);
 
   const formatTemperature = (celsius:number): string => {
@@ -500,6 +502,9 @@ const playPlaylist = async () => {
 
     if (!response.ok) {
       throw new Error("Failed to save track to library.");
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess)
     }
 
     console.log("✅ Track saved to your Liked Songs!");
@@ -668,12 +673,16 @@ const playPlaylist = async () => {
       {currentTrack && (
         <div className="mt-3 text-center text-white text-sm">
           Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
+          {/* Save track button */}
           <button
             onClick={saveCurrentTrack}
             className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition "
           >
             Save to Liked Songs
           </button>
+          {saveSuccess && (
+            <p className="mt-1 text-sm text-green-300">Track saved to liked songs</p>
+          )}
         </div>
       )}
 
@@ -689,17 +698,6 @@ const playPlaylist = async () => {
           </button>
         </div>
       )}
-
-      {/* Spotify Status — REMOVE before production */}
-      <div className="mt-6 text-sm text-gray-600">
-        {!spotifyToken ? (
-          <button onClick={getSpotifyToken} className="underline text-blue-500 hover:text-blue-700">
-            Login with Spotify
-          </button>
-        ) : (
-          <p className="text-xs text-white/50 italic">✅ Logged into Spotify</p>
-        )}
-      </div>
     </div>
   </>
 );
