@@ -503,78 +503,83 @@ const playPlaylist = async () => {
   };
   
   return (
-    <>
-      {/* Overlay layer for readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-60 z-0" />
-  
-      {/* App content container */}
-      <div
-        style={backgroundStyle}
-        className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
-      >
-     <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-light-300 italic text-white text-center px-6 py-3 rounded-xl shadow-lg bg-white/10 backdrop-blur-md inline-block tracking-tight transition-transform duration-300 hover:animate-bounce hover:drop-shadow-[0_0_15px_rgba(93,255,191,0.6)]">
-      wmx weather mix
-     </h1>
-  
+  <>
+    {/* Dark overlay for contrast */}
+    <div className="absolute inset-0 bg-black z-0" />
+
+    {/* Main App Container — Positioned over full-screen background */}
+    <div
+      style={backgroundStyle}
+      className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
+    >
+      {/* Title Section */}
+      <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-light italic text-white text-center px-6 py-3 mb-6 bg-black/30 backdrop-blur-sm rounded-xl tracking-tight">
+        wmx weather mix
+      </h1>
+
+      {/* City Input + Weather Type Selector */}
       <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-lg">
+        <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6">
+          {/* City Input */}
           <input
             type="text"
             placeholder="Enter city name"
-            className="w-full bg-white/20 text-white placeholder-white border border-white rounded px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full bg-white/10 text-white placeholder-white border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
-          {/* Fallback UI for No Weather Data */}
+
+          {/* Prompt if no weather fetched yet */}
           {!weather && !loading && !error && (
             <div className="mt-6 text-center text-white text-lg">
               Enter a city above to get a vibe-matched playlist 🎧
             </div>
           )}
 
+          {/* Fetch Playlist Button */}
           <button
-            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-md"
+            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             onClick={fetchWeather}
             disabled={!spotifyToken}
           >
             {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
           </button>
 
+          {/* Manual Weather Selection Dropdown */}
           <select
-            className="w-full bg-white/20 text-white placeholder-white border border-white rounded px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full bg-white/10 text-white border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={manualWeatherCode ?? ''}
             onChange={(e) => {
               const value = e.target.value;
               setManualWeatherCode(value ? parseInt(value) : null);
             }}
           >
-          <option value="">🌦️ Use Live Weather</option>
-          <option value="0">☀️ Sunny</option>
-          <option value="1">🌤️ Partly Cloudy</option>
-          <option value="2">🌥️ Mostly Cloudy</option>
-          <option value="3">☁️ Overcast</option>
-          <option value="45">🌫️ Fog</option>
-          <option value="48">🌁 Dense Fog</option>
-          <option value="51">🌧️ Light Rain</option>
-          <option value="55">🌧️ Heavy Rain</option>
-          <option value="61">🌦️ Light Showers</option>
-          <option value="63">🌧️ Moderate Showers</option>
-          <option value="65">⛈️ Heavy Showers</option>
-          <option value="71">❄️ Light Snow</option>
-          <option value="73">❄️ Moderate Snow</option>
-          <option value="75">❄️ Heavy Snow</option>
-          <option value="80">🌧️ Rain Showers</option>
-          <option value="81">⛈️ Thunder Showers</option>
-          <option value="95">🌩️ Storm</option>
+            <option value="">🌦️ Use Live Weather</option>
+            <option value="0">☀️ Sunny</option>
+            <option value="1">🌤️ Partly Cloudy</option>
+            <option value="2">🌥️ Mostly Cloudy</option>
+            <option value="3">☁️ Overcast</option>
+            <option value="45">🌫️ Fog</option>
+            <option value="48">🌁 Dense Fog</option>
+            <option value="51">🌧️ Light Rain</option>
+            <option value="55">🌧️ Heavy Rain</option>
+            <option value="61">🌦️ Light Showers</option>
+            <option value="63">🌧️ Moderate Showers</option>
+            <option value="65">⛈️ Heavy Showers</option>
+            <option value="71">❄️ Light Snow</option>
+            <option value="73">❄️ Moderate Snow</option>
+            <option value="75">❄️ Heavy Snow</option>
+            <option value="80">🌧️ Rain Showers</option>
+            <option value="81">⛈️ Thunder Showers</option>
+            <option value="95">🌩️ Storm</option>
           </select>
         </div>
       </div>
 
-  {/* temperature and weather code */}
+      {/* Weather Readout + Unit Toggle */}
       <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
         {loading && <LoadingIndicator />}
         {error && <ErrorMessage message={error} />}
-        {/* If weather has been fetched, display temperature and playlist message */}
         {weather && (
           <div className="text-center mt-4 text-white text-lg font-medium">
             <p>
@@ -586,8 +591,10 @@ const playPlaylist = async () => {
               in {location || "your area"}.
             </p>
             <p>Enjoy your weather-based playlist!</p>
+
+            {/* Fahrenheit / Celsius Toggle */}
             <div className='mt-4 flex items-center justify-center gap-3'>
-              <span className='text-sm text-white'>{useFahrenheit ? "°F" : "°C"}</span>
+              <span className='text-sm'>{useFahrenheit ? "°F" : "°C"}</span>
               <label className='relative inline-flex items-center cursor-pointer'>
                 <input 
                   type='checkbox'
@@ -595,7 +602,7 @@ const playPlaylist = async () => {
                   checked={useFahrenheit}
                   onChange={() => setUseFahrenheit(!useFahrenheit)}
                 />
-                <div className='w-11 h-6 bg-gray-300 rounded-full peer peer-focusing:ring-2 peer-focus:ring-blue-500 peer-checked:bg-blue-500 transition-all duration-300'></div>
+                <div className='w-11 h-6 bg-gray-300 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500 peer-checked:bg-blue-500 transition-all duration-300'></div>
                 <div className='absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md transform peer-checked:translate-x-full transition-all duration-300'></div>
               </label>
             </div>
@@ -603,11 +610,12 @@ const playPlaylist = async () => {
         )}
       </div>
 
+      {/* Playlist Player Section */}
       {playlist && (
         <div className="w-full max-w-xl px-4 sm:px-6 lg:px-8 mt-8">
           <NowPlaying
             playlistName={playlist.name}
-            imageUrl={playlist.images[0].url}
+            imageUrl={playlist.images[0].url} // ✅ replace this with currentTrack.albumArt in the next task
             isPlaying={isPlaying}
             onPlay={playPlaylist}
             onPause={pausePlaylist}
@@ -619,12 +627,14 @@ const playPlaylist = async () => {
         </div>
       )}
 
+      {/* Now Playing Text */}
       {currentTrack && (
         <div className="mt-3 text-center text-white text-sm">
           Now Playing: <strong>{currentTrack.name}</strong> by <em>{currentTrack.artist}</em>
         </div>
       )}
-      {/* Error message + Retry button */}
+
+      {/* Error Message Fallback */}
       {error && (
         <div className="mt-4 bg-red-100 text-red-800 p-4 rounded shadow text-center">
           <p className="mb-2">{error}</p>
@@ -637,18 +647,20 @@ const playPlaylist = async () => {
         </div>
       )}
 
+      {/* Spotify Status — REMOVE before production */}
       <div className="mt-6 text-sm text-gray-600">
         {!spotifyToken ? (
           <button onClick={getSpotifyToken} className="underline text-blue-500 hover:text-blue-700">
             Login with Spotify
           </button>
         ) : (
-          <p>✅ Logged into Spotify</p>
+          <p className="text-xs text-white/50 italic">✅ Logged into Spotify</p>
         )}
       </div>
     </div>
   </>
-  );   
+);
+
 }
 
 export default App;
