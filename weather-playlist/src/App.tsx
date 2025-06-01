@@ -20,7 +20,10 @@ const App: React.FC = () => {
   //Progress Bar
   const [trackProgress, setTrackProgress] = useState<number>(0); //ms
   const [trackDuration, setTrackDuration] = useState<number>(0); //ms
-  const progressIntervalRef = useRef<number | undefined>(undefined); 
+  const progressIntervalRef = useRef<number | undefined>(undefined);
+  
+  //Toggle Controls
+  const [showControls, setShowControls] = useState<boolean>(false);
 
   // App status
   const [loading, setLoading] = useState<boolean>(false);
@@ -54,7 +57,7 @@ const App: React.FC = () => {
     // Only add script if it's not already present
     if (!window.Spotify) {
       const script = document.createElement("script");
-      script.src = "https://sdk.scdn.co/spotify-player.js"; // ✅ Use .co, not .com
+      script.src = "https://sdk.scdn.co/spotify-player.js"; 
       script.async = true;
       script.onload = () => {
         console.log("🎵 Spotify SDK Loaded!");
@@ -554,42 +557,46 @@ const playPlaylist = async () => {
       style={backgroundStyle}
       className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
     >
-      {/* Title Section */}
-      <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-light italic text-white text-center px-6 py-3 mb-6 bg-black/30 backdrop-blur-sm rounded-xl tracking-tight">
-        wmx weather mix
-      </h1>
+      {/* Floating Burger Icon */}
+      <button
+        onClick={() => setShowControls(!showControls)}
+        className="fixed top-4 left-4 z-50 bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-gray-100 transition"
+        aria-label="Toggle Controls"
+      >
+        ☰
+      </button>
 
-      {/* City Input + Weather Type Selector */}
-      <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6">
+      {showControls && (
+        <>
+         <div
+            className="fixed inset-0 bg-black/5 z-40"
+            onClick={() => setShowControls(false)}
+         />
+
+         <div className="fixed top-0 left-0 h-full w-72 bg-white text-black p-6 shadow-lg z-50 space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Controls</h2>
+              <button
+                onClick={() => setShowControls(false)}
+                className="text-xl text-gray-500 hover:text-black"
+                aria-label="Close Menu"
+              >
+                x
+              </button>
+            </div>
+
           {/* City Input */}
           <input
             type="text"
             placeholder="Enter city name"
-            className="w-full bg-white/10 text-white placeholder-white border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full bg-white/10 placeholder-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
 
-          {/* Prompt if no weather fetched yet */}
-          {!weather && !loading && !error && (
-            <div className="mt-6 text-center text-white text-lg">
-              Enter a city above to get a vibe-matched playlist 🎧
-            </div>
-          )}
-
-          {/* Fetch Playlist Button */}
-          <button
-            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            onClick={fetchWeather}
-            disabled={!spotifyToken}
-          >
-            {spotifyToken ? (loading ? "Fetching..." : "Get Playlist") : "Loading Spotify..."}
-          </button>
-
           {/* Manual Weather Selection Dropdown */}
           <select
-            className="w-full bg-white/10 text-white border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full bg-white/10 text-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={manualWeatherCode ?? ''}
             onChange={(e) => {
               const value = e.target.value;
@@ -615,8 +622,24 @@ const playPlaylist = async () => {
             <option value="81">⛈️ Thunder Showers</option>
             <option value="95">🌩️ Storm</option>
           </select>
-        </div>
-      </div>
+
+           {/* Fetch Playlist Button */}
+          <button
+            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            onClick={fetchWeather}
+            disabled={!spotifyToken}
+          >
+            {spotifyToken ? (loading ? "Fetching..." : playlist ? "Playlist Ready" : "Get Playlist") : "Loading Spotify..."}
+          </button>
+         </div>
+        </>
+      )}
+
+      {/* Title Section */}
+      <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-light italic text-white text-center px-6 py-3 mb-6 bg-black/30 backdrop-blur-sm rounded-xl tracking-tight">
+        wmx weather mix
+      </h1>
+
 
       {/* Weather Readout + Unit Toggle */}
       <div className="w-full max-w-xl space-y-6 px-4 sm:px-6 lg:px-8">
