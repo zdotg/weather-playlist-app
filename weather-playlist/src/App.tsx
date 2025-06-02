@@ -7,6 +7,7 @@ import ErrorMessage from "./components/ErrorMessage";
 import NowPlaying from "./components/NowPlaying";
 import { getWeatherTheme } from "./utils/getWeatherTheme";
 import './App.css';
+import { motion, AnimatePresence } from "framer-motion";
 
 // ✅ Imported shared types
 import { WeatherData, Playlist, TrackInfo } from "./types/types";
@@ -41,6 +42,8 @@ const App: React.FC = () => {
   const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
 
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+
+  const [hasLoadedPlaylist, setHasLoadedPlaylist] = useState<boolean>(false);
 
   const playerRef = useRef<Spotify.Player | null>(null);
 
@@ -142,6 +145,7 @@ const App: React.FC = () => {
       return;
     }
 
+    setHasLoadedPlaylist(true);
     setLoading(true);
     setError(null);
 
@@ -169,6 +173,7 @@ const App: React.FC = () => {
       setError(getFriendlyErrorMessage(error));
     } finally {
       setLoading(false);
+      setShowControls(false);
     }
   };
 
@@ -240,7 +245,18 @@ const fetchCurrentTrack = async () => {
       throw new Error("Failed to fetch currently playing track");
     }
 
-    const data = await response.json();
+    const text = await response.text();
+    if (!text) {
+      console.warn("⚠️ No content in currently playing response");
+      setCurrentTrack(null);
+      setTrackDuration(0);
+      setTrackProgress(0);
+      return;
+    }
+
+    const data = JSON.parse(text);
+
+
     const name = data.item?.name;
     const artist = data.item?.artists?.[0]?.name;
     const duration = data.item?.duration_ms;
@@ -546,7 +562,27 @@ const playPlaylist = async () => {
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
   };
-    
+  
+  const panelVariants = {
+    hidden: { opacity: 0, x: -300 },
+    show: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 40,
+        staggerChildren: 0.1,
+      },
+    },
+    exit: { opacity: 0, x: -300 },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 },
+  };
+
   return (
   <>
     {/* Removed Overlay */}
@@ -558,87 +594,137 @@ const playPlaylist = async () => {
       className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-12 text-white"
     >
       {/* Floating Burger Icon */}
-      <button
+     <motion.button
+        layoutId="titleBurger"
         onClick={() => setShowControls(!showControls)}
         className="fixed top-4 left-4 z-50 bg-white text-gray-800 p-2 rounded-full shadow-lg hover:bg-gray-100 transition"
         aria-label="Toggle Controls"
       >
         ☰
-      </button>
+      </motion.button>
 
-      {showControls && (
-        <>
-         <div
-            className="fixed inset-0 bg-black/5 z-40"
-            onClick={() => setShowControls(false)}
-         />
+      <AnimatePresence>
+        {(showControls || !hasLoadedPlaylist) && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              key="overlay"
+              className="fixed inset-0 bg-black/5 z-40"
+              onClick={() => setShowControls(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
 
-         <div className="fixed top-0 left-0 h-full w-72 bg-white text-black p-6 shadow-lg z-50 space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Controls</h2>
-              <button
-                onClick={() => setShowControls(false)}
-                className="text-xl text-gray-500 hover:text-black"
-                aria-label="Close Menu"
+            {/* Slide-In Controls Panel */}
+            <motion.div
+              key="controls"
+              variants={panelVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className="fixed z-50 bg-white text-black shadow-lg p-6 space-y-4 
+                w-full sm:w-72 
+                h-[40vh] sm:h-full 
+                bottom-0 sm:top-0 
+                left-0 sm:left-0 
+                rounded-t-2xl sm:rounded-none"
+            >
+              {/* Drag Handle for mobile */}
+              <div className="w-12 h-1 bg-gray-400 rounded-full mx-auto my-2 sm:hidden" />
+
+              {/* Title and Close */}
+              <motion.div variants={itemVariants} className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Controls</h2>
+                <button
+                  onClick={() => setShowControls(false)}
+                  className="text-xl text-gray-500 hover:text-black"
+                  aria-label="Close Menu"
+                >
+                  x
+                </button>
+              </motion.div>
+
+              {/* City Input */}
+              <motion.input
+                variants={itemVariants}
+                type="text"
+                placeholder="Enter city name"
+                className="w-full bg-white/10 placeholder-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+
+              {/* Weather Dropdown */}
+              <motion.select
+                variants={itemVariants}
+                className="w-full bg-white/10 text-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={manualWeatherCode ?? ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setManualWeatherCode(value ? parseInt(value) : null);
+                }}
               >
-                x
-              </button>
-            </div>
+                <option value="">🌦️ Use Live Weather</option>
+                <option value="0">☀️ Sunny</option>
+                <option value="1">🌤️ Partly Cloudy</option>
+                <option value="2">🌥️ Mostly Cloudy</option>
+                <option value="3">☁️ Overcast</option>
+                <option value="45">🌫️ Fog</option>
+                <option value="48">🌁 Dense Fog</option>
+                <option value="51">🌧️ Light Rain</option>
+                <option value="55">🌧️ Heavy Rain</option>
+                <option value="61">🌦️ Light Showers</option>
+                <option value="63">🌧️ Moderate Showers</option>
+                <option value="65">⛈️ Heavy Showers</option>
+                <option value="71">❄️ Light Snow</option>
+                <option value="73">❄️ Moderate Snow</option>
+                <option value="75">❄️ Heavy Snow</option>
+                <option value="80">🌧️ Rain Showers</option>
+                <option value="81">⛈️ Thunder Showers</option>
+                <option value="95">🌩️ Storm</option>
+              </motion.select>
 
-          {/* City Input */}
-          <input
-            type="text"
-            placeholder="Enter city name"
-            className="w-full bg-white/10 placeholder-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
+              {/* Fetch Playlist Button */}
+              <motion.button
+                variants={itemVariants}
+                className="w-full bg-black/70 text-white px-4 py-3 my-2 rounded-md border border-white hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-white transition"
+                onClick={fetchWeather}
+                disabled={!spotifyToken}
+              >
+                {spotifyToken
+                  ? loading
+                    ? "Fetching..."
+                    : playlist
+                    ? "Playlist Ready"
+                    : "Get Playlist"
+                  : "Loading Spotify..."}
+              </motion.button>
+            </motion.div>
 
-          {/* Manual Weather Selection Dropdown */}
-          <select
-            className="w-full bg-white/10 text-gray border border-white rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={manualWeatherCode ?? ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              setManualWeatherCode(value ? parseInt(value) : null);
-            }}
-          >
-            <option value="">🌦️ Use Live Weather</option>
-            <option value="0">☀️ Sunny</option>
-            <option value="1">🌤️ Partly Cloudy</option>
-            <option value="2">🌥️ Mostly Cloudy</option>
-            <option value="3">☁️ Overcast</option>
-            <option value="45">🌫️ Fog</option>
-            <option value="48">🌁 Dense Fog</option>
-            <option value="51">🌧️ Light Rain</option>
-            <option value="55">🌧️ Heavy Rain</option>
-            <option value="61">🌦️ Light Showers</option>
-            <option value="63">🌧️ Moderate Showers</option>
-            <option value="65">⛈️ Heavy Showers</option>
-            <option value="71">❄️ Light Snow</option>
-            <option value="73">❄️ Moderate Snow</option>
-            <option value="75">❄️ Heavy Snow</option>
-            <option value="80">🌧️ Rain Showers</option>
-            <option value="81">⛈️ Thunder Showers</option>
-            <option value="95">🌩️ Storm</option>
-          </select>
+          </>
+        )}
+      </AnimatePresence>
 
-           {/* Fetch Playlist Button */}
-          <button
-            className="w-full bg-blue-500 text-white px-4 py-3 my-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            onClick={fetchWeather}
-            disabled={!spotifyToken}
-          >
-            {spotifyToken ? (loading ? "Fetching..." : playlist ? "Playlist Ready" : "Get Playlist") : "Loading Spotify..."}
-          </button>
-         </div>
-        </>
-      )}
 
       {/* Title Section */}
-      <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-light italic text-white text-center px-6 py-3 mb-6 bg-black/30 backdrop-blur-sm rounded-xl tracking-tight">
-        wmx weather mix
-      </h1>
+     <AnimatePresence>
+        {!hasLoadedPlaylist && (
+          <motion.h1
+            key="title"
+            layoutId="titleBurger"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="font-heading text-3xl sm:text-4xl lg:text-5xl font-light italic text-white text-center px-6 py-3 mb-6 bg-black/30 backdrop-blur-sm rounded-xl tracking-tight"
+          >
+            wmx weather mix
+          </motion.h1>
+        )}
+      </AnimatePresence>
+
+      
 
 
       {/* Weather Readout + Unit Toggle */}
